@@ -363,18 +363,26 @@
         <div class="kc-scroll"><div id="kc_success_users"></div></div>
       </div>
       <div class="card">
+        <h3 class="section-title">重点国家&全球：成单率（近3个月）</h3>
+        <div class="kc-scroll"><div id="kc_success_rate"></div></div>
+      </div>
+      <div class="card">
+        <h3 class="section-title">重点国家&全球：客单价（近3个月）</h3>
+        <div class="kc-scroll"><div id="kc_aov"></div></div>
+      </div>
+      <div class="card">
         <h3 class="section-title">重点国家&全球：复购率（近3个月）</h3>
         <div class="kc-scroll"><div id="kc_repurchase_rate"></div></div>
       </div>
       <div class="card">
-        <h3 class="section-title">重点国家&全球：转化率（近3个月，需用户列表）</h3>
+        <h3 class="section-title">重点国家&全球：转化率（近3个月）</h3>
         <div class="kc-scroll"><div id="kc_conversion_rate"></div></div>
       </div>
     </div>
 
     <!-- 单国：产品榜单（除“汇总/重点国家/全球”外展示） -->
     <div id="productSection" class="grid" style="grid-template-columns:1fr">
-      <div class="card">
+      <div class="card" id="card_old_tel">
         <h3 class="section-title">老客 - 话费</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -395,7 +403,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card_old_data">
         <h3 class="section-title">老客 - 流量</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -416,7 +424,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card_new_tel">
         <h3 class="section-title">新客 - 话费</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -437,7 +445,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card_new_data">
         <h3 class="section-title">新客 - 流量</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -1026,6 +1034,8 @@
           renderKeyCountryGrouped('kc_new_users', kc.months, kc.countries, kc.new_users, '人', '新客数需从“用户列表”获取，当前留空');
           renderKeyCountryGrouped('kc_orders_success', kc.months, kc.countries, kc.orders_success, '单', '无数据');
           renderKeyCountryGrouped('kc_success_users', kc.months, kc.countries, kc.success_users, '人', '无数据');
+        renderKeyCountryGrouped('kc_success_rate', kc.months, kc.countries, kc.success_rate, '%', '无数据');
+        renderKeyCountryGrouped('kc_aov', kc.months, kc.countries, kc.aov, '元', '无数据');
           renderKeyCountryGrouped('kc_repurchase_rate', kc.months, kc.countries, kc.repurchase_rate, '%', '无数据');
           renderKeyCountryGrouped('kc_conversion_rate', kc.months, kc.countries, kc.conversion_rate, '%', '转化率需从“用户列表”获取，当前留空');
 
@@ -1046,6 +1056,19 @@
       renderBlock('old_data', 'od');
       renderBlock('new_tel', 'nt');
       renderBlock('new_data', 'nd');
+
+      // 若国家无“流量”产品（本月与上月都为空），则隐藏“流量”两张卡片（避免空柱状图/饼图展示）
+      const hasAny = (b) => {
+        if(!b) return false;
+        const a = (b.orders_top5||[]).length + (b.success_users_top5||[]).length + (b.gmv_top10||[]).length;
+        return a > 0;
+      };
+      const showOldData = hasAny(pb.old_data);
+      const showNewData = hasAny(pb.new_data);
+      const oldDataCard = document.getElementById('card_old_data');
+      const newDataCard = document.getElementById('card_new_data');
+      if(oldDataCard) oldDataCard.style.display = showOldData ? '' : 'none';
+      if(newDataCard) newDataCard.style.display = showNewData ? '' : 'none';
     }
 
     function refresh(){
