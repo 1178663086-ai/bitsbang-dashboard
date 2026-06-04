@@ -1125,9 +1125,9 @@
       const renderBlock = (key, prefix) => {
         const b = pb[key] || {};
         renderDonutTo(`donutSvg_${prefix}_orders`, `donutLegend_${prefix}_orders`, b.orders_top5 || [], '单');
-        // 产品类条形图：条形图表面数值黑色 + ↑↓（不按环比上色）
-        renderBarsTo(`barList_${prefix}_users`, b.success_users_top5 || [], '人', {showMomColor:false, showMomArrow:true});
-        renderBarsTo(`barList_${prefix}_gmv`, b.gmv_top10 || [], '元', {showMomColor:false, showMomArrow:true});
+        // 产品类条形图：条形图表面数值黑色（不按环比上色/不加↑↓）
+        renderBarsTo(`barList_${prefix}_users`, b.success_users_top5 || [], '人', {showMomColor:false, showMomArrow:false});
+        renderBarsTo(`barList_${prefix}_gmv`, b.gmv_top10 || [], '元', {showMomColor:false, showMomArrow:false});
       };
       renderBlock('old_tel', 'ot');
       renderBlock('old_data', 'od');
