@@ -797,11 +797,15 @@
       const showMomArrow = (o.showMomArrow===undefined) ? true : !!o.showMomArrow;
       const layout = (o.layout || '').toString();
       const shortenProductName = (s)=>{
-        const t = (s===null || s===undefined) ? '' : String(s);
+        const t = (s===null || s===undefined) ? '' : String(s).trim();
+        if(!t) return '';
+        // 规则：当名称过长时，运营商仅保留到第一个空格前；空格后的去掉，再加上 SKU（从第一个数字开始截取）。
+        const op = t.split(/\s+/)[0] || t;
         const idx = t.search(/\d/);
-        if(idx <= 0) return t.trim();
-        const head = t.slice(0, idx).trim();
-        return head || t.trim();
+        if(idx < 0) return op;
+        const sku = t.slice(idx).trim();
+        if(!sku) return op;
+        return `${op} ${sku}`.trim();
       };
       const max = Math.max(...items.map(x=>x.value||0),1);
       items.forEach((it)=>{
