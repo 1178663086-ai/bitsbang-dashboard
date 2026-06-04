@@ -104,12 +104,14 @@
     .dot{width:10px;height:10px;border-radius:999px;flex:0 0 10px}
     .legend-left{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:800}
     .legend-right{color:var(--muted);font-weight:800;text-align:right;line-height:1.15}
+    .share{margin-left:8px;color:var(--muted);font-weight:500;font-size:11px}
 
     /* bars */
     .bars{display:flex;flex-direction:column;gap:12px}
     .bar-row{display:grid;grid-template-columns:180px 1fr 170px;gap:12px;align-items:center}
     @media (max-width:900px){.bar-row{grid-template-columns:1fr;gap:6px;align-items:flex-start}}
     .bar-name{font-size:12px;color:var(--text);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bar-name .share{margin-left:8px;color:var(--muted);font-weight:500;font-size:11px}
     .bar-track{height:12px;background:#eef2f7;border-radius:999px;overflow:hidden}
     /* 单色系：更明显但不深色（统一用于所有横向排名条形图） */
     .bar-fill{height:12px;background:#93c5fd;border-radius:999px}
@@ -145,6 +147,8 @@
     .kc-bars{display:flex;gap:8px;align-items:flex-end;height:170px;margin-top:6px}
     .kc-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end}
     .kc-top{margin-bottom:2px;font-size:10px;color:var(--muted);font-weight:900;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .kc-top.mom-up{color:var(--green)}
+    .kc-top.mom-down{color:var(--red)}
     .kc-bar{border-radius:10px 10px 4px 4px;box-shadow:0 8px 14px rgba(15,23,42,.08)}
     .kc-val{margin-top:6px;font-size:12px;color:var(--muted);font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -225,9 +229,14 @@
         <div class="k-sub" id="kpi_success_orders_chg">-</div>
       </div>
       <div class="card">
-        <div class="k-title">新客数</div>
-        <div class="k-value" id="kpi_new_users">-</div>
-        <div class="k-sub" id="kpi_new_users_chg">-</div>
+        <div class="k-title">成单率</div>
+        <div class="k-value" id="kpi_success_rate">-</div>
+        <div class="k-sub" id="kpi_success_rate_chg">-</div>
+      </div>
+      <div class="card">
+        <div class="k-title">客单价</div>
+        <div class="k-value" id="kpi_aov">-</div>
+        <div class="k-sub" id="kpi_aov_chg">-</div>
       </div>
       <div class="card">
         <div class="k-title">复购率</div>
@@ -238,6 +247,11 @@
         <div class="k-title">留存率</div>
         <div class="k-value" id="kpi_retention">-</div>
         <div class="k-sub" id="kpi_retention_chg">-</div>
+      </div>
+      <div class="card">
+        <div class="k-title">新客数</div>
+        <div class="k-value" id="kpi_new_users">-</div>
+        <div class="k-sub" id="kpi_new_users_chg">-</div>
       </div>
       <div class="card">
         <div class="k-title">转化率</div>
@@ -508,6 +522,7 @@
       {key:'success_users', name:'成单人数', unit:'人', type:'value'},
       {key:'new_users', name:'新客数', unit:'人', type:'value'},
       {key:'success_rate', name:'成单率', unit:'%', type:'rate_monthly'},
+      {key:'aov', name:'客单价', unit:'元', type:'aov'},
       {key:'repurchase_rate', name:'复购率', unit:'%', type:'rate_repurchase'},
       {key:'retention_rate', name:'留存率', unit:'%', type:'rate_retention'},
       {key:'conversion_rate', name:'转化率', unit:'%', type:'rate_conversion'},
@@ -684,12 +699,14 @@
       return `<div class="val-sub ${cls}">${s}</div>`;
     }
 
-    function renderDonutTo(svgId, legendId, items, unit){
+    function renderDonutTo(svgId, legendId, items, unit, opts){
       const svg=document.getElementById(svgId);
       const legend=document.getElementById(legendId);
       if(!svg || !legend) return;
       svg.innerHTML=''; legend.innerHTML='';
 
+      const o = opts || {};
+      const shareDenom = (o.shareDenom===null || o.shareDenom===undefined) ? null : Number(o.shareDenom);
       const total = items.reduce((s,x)=>s + (x.value||0),0) || 1;
       const cx=130, cy=130, r=96, inner=60;
 
@@ -722,13 +739,22 @@
         const dot=document.createElement('span');
         dot.className='dot';
         dot.style.background = COLORS[idx % COLORS.length];
-        const name=document.createElement('span');
-        name.textContent = it.name;
-        left.appendChild(dot); left.appendChild(name);
+        const nameWrap=document.createElement('span');
+        const nameMain=document.createElement('span');
+        nameMain.textContent = it.name;
+        nameWrap.appendChild(nameMain);
+        if(shareDenom && isFinite(shareDenom) && shareDenom>0 && it && it.value!==null && it.value!==undefined){
+          const sharePct = (Number(it.value) / shareDenom) * 100;
+          const shareSpan=document.createElement('span');
+          shareSpan.className='share';
+          shareSpan.textContent = `占比${sharePct.toFixed(0)}%`;
+          nameWrap.appendChild(shareSpan);
+        }
+        left.appendChild(dot); left.appendChild(nameWrap);
         const right=document.createElement('div');
         right.className='legend-right';
         const u = unit || '';
-        // 饼图：不展示占比；环比跟在总数后面同一行
+        // 环比跟在总数后面同一行
         right.innerHTML = `<div class="val-main">${n(it.value)}${u} ${formatMomInline(it)}</div>`;
         li.appendChild(left); li.appendChild(right);
         legend.appendChild(li);
@@ -761,10 +787,14 @@
       svg.appendChild(c1); svg.appendChild(c2);
     }
 
-    function renderBarsTo(listId, items, unit){
+    function renderBarsTo(listId, items, unit, opts){
       const list=document.getElementById(listId);
       if(!list) return;
       list.innerHTML='';
+      const o = opts || {};
+      const shareDenom = (o.shareDenom===null || o.shareDenom===undefined) ? null : Number(o.shareDenom);
+      const showMomColor = (o.showMomColor===undefined) ? true : !!o.showMomColor;
+      const showMomArrow = (o.showMomArrow===undefined) ? true : !!o.showMomArrow;
       const max = Math.max(...items.map(x=>x.value||0),1);
       items.forEach((it)=>{
         const row=document.createElement('div');
@@ -772,7 +802,12 @@
         const name=document.createElement('div');
         name.className='bar-name';
         name.title=it.name;
-        name.textContent=it.name;
+        if(shareDenom && isFinite(shareDenom) && shareDenom>0 && it && it.value!==null && it.value!==undefined){
+          const sharePct = (Number(it.value) / shareDenom) * 100;
+          name.innerHTML = `<span>${it.name}</span><span class="share">占比${sharePct.toFixed(0)}%</span>`;
+        }else{
+          name.textContent=it.name;
+        }
         const track=document.createElement('div');
         track.className='bar-track';
         track.style.position='relative';
@@ -785,7 +820,7 @@
         const label=document.createElement('div');
         label.className='bar-label';
         let arrow = '';
-        if(it && it.mom_pct!==null && it.mom_pct!==undefined){
+        if(showMomArrow && it && it.mom_pct!==null && it.mom_pct!==undefined){
           const p = Number(it.mom_pct);
           if(isFinite(p)){
             arrow = (p>=0) ? '↑' : '↓';
@@ -800,7 +835,7 @@
         label.style.fontSize='12px';
         label.style.fontWeight='950';
         // 「汇总（所有国家）」柱状图数值颜色规则：若带环比字段，则按涨跌给数字上色
-        if(it && it.mom_pct!==null && it.mom_pct!==undefined){
+        if(showMomColor && it && it.mom_pct!==null && it.mom_pct!==undefined){
           const p = Number(it.mom_pct);
           if(isFinite(p)){
             label.style.color = (p>=0) ? 'var(--green)' : 'var(--red)';
@@ -840,6 +875,16 @@
       setText('kpi_success_orders', valUnit(m.success_users[curIdx], '人'));
       setText('kpi_success_orders_chg', deltaValue(m.success_users[curIdx], m.success_users[prevIdx], '人'));
 
+      // 成单率：成功订单数 / 全量订单数
+      setText('kpi_success_rate', rate(m.success_rate[curIdx]));
+      setText('kpi_success_rate_chg', deltaPP(m.success_rate[curIdx], m.success_rate[prevIdx]));
+
+      // 客单价：GMV / 成单数（取整）
+      const aovCur = (m.orders_success[curIdx] && Number(m.orders_success[curIdx])>0) ? (Number(m.gmv[curIdx]) / Number(m.orders_success[curIdx])) : null;
+      const aovPrev = (m.orders_success[prevIdx] && Number(m.orders_success[prevIdx])>0) ? (Number(m.gmv[prevIdx]) / Number(m.orders_success[prevIdx])) : null;
+      setText('kpi_aov', (aovCur===null) ? '-' : `${n(Math.round(aovCur))}元`);
+      setText('kpi_aov_chg', deltaValue(aovCur===null?null:Math.round(aovCur), aovPrev===null?null:Math.round(aovPrev), '元'));
+
       setText('kpi_new_users', valUnit(m.new_users[curIdx], '人'));
       setText('kpi_new_users_chg', deltaValue(m.new_users[curIdx], m.new_users[prevIdx], '人'));
 
@@ -853,7 +898,7 @@
       setText('kpi_conversion', rate(m.conversion_rate));
       setText('kpi_conversion_chg', deltaPP(m.conversion_rate, m.conversion_rate_prev));
 
-      // Table (9 metrics in order)
+      // Table（指标明细）
       const tb=document.getElementById('metricsTbody');
       tb.innerHTML = METRICS.map(def=>{
         let cur='-', prev='-', delta='-';
@@ -865,6 +910,12 @@
           cur = rate(m.success_rate[curIdx]);
           prev = rate(m.success_rate[prevIdx]);
           delta = deltaPP(m.success_rate[curIdx], m.success_rate[prevIdx]);
+        }else if(def.type==='aov'){
+          const curAov = aovCur;
+          const prevAov = aovPrev;
+          cur = (curAov===null) ? '-' : `${n(Math.round(curAov))}${def.unit}`;
+          prev = (prevAov===null) ? '-' : `${n(Math.round(prevAov))}${def.unit}`;
+          delta = deltaValue(curAov===null?null:Math.round(curAov), prevAov===null?null:Math.round(prevAov), def.unit);
         }else if(def.type==='rate_repurchase'){
           cur = rate(m.repurchase_rate);
           prev = rate(m.repurchase_rate_prev);
@@ -940,6 +991,20 @@
         host.innerHTML = `<div class="note">无数据</div>`;
         return;
       }
+      // 单国切换：若该国家无“流量”产品，则隐藏“流量”板块（避免 0 单/0 人/0 元 的空面板）
+      const filtered = (list || []).filter(it=>{
+        const cat = String(it && it.category ? it.category : '');
+        if(!cat.includes('流量')) return true;
+        const sum =
+          (Number(it.orders_success_old||0) + Number(it.orders_success_new||0) +
+           Number(it.success_users_old||0) + Number(it.success_users_new||0) +
+           Number(it.gmv_old||0) + Number(it.gmv_new||0));
+        return sum > 0;
+      });
+      if(filtered.length === 0){
+        host.innerHTML = `<div class="note">无数据</div>`;
+        return;
+      }
       const mom = (cur, prev, unit) => {
         if(prev===null || prev===undefined) return '-';
         const p = Number(prev);
@@ -952,7 +1017,7 @@
         const cls = (pct>=0) ? 'mom-up' : 'mom-down';
         return `<span class="${cls}">${sign}${pct.toFixed(0)}%（${dSign}${n(delta)}${unit}）</span>`;
       };
-      host.innerHTML = list.map(it=>{
+      host.innerHTML = filtered.map(it=>{
         const title = it.category || '分类';
         const row = (label, oldV, newV, oldPrev, newPrev, unit) => `
           <div class="split-two" style="margin-top:10px">
@@ -1018,8 +1083,14 @@
           // 国家维度 TOP 图（汇总/重点国家）
           document.getElementById('donutTitle').textContent = seg.charts.donut_title;
           document.getElementById('barTitle').textContent = seg.charts.bar_title;
-          renderDonutTo('donutSvg', 'donutLegend', seg.charts.donut || [], '单');
-          renderBarsTo('barList', seg.charts.bar || [], '元');
+          const m = seg.metrics || {};
+          const curIdx = (m.months && m.months.length) ? (m.months.length-1) : 1;
+          const denomOrders = (m.orders_success && m.orders_success.length) ? Number(m.orders_success[curIdx]||0) : null;
+          const denomGmv = (m.gmv && m.gmv.length) ? Number(m.gmv[curIdx]||0) : null;
+          // 汇总（全部国家）/重点国家：国家名称后追加占比
+          renderDonutTo('donutSvg', 'donutLegend', seg.charts.donut || [], '单', {shareDenom: denomOrders});
+          // 国家支付金额 TOP10：数值保持黑色（不按环比上色/不加箭头），仅在国家名称后追加占比
+          renderBarsTo('barList', seg.charts.bar || [], '元', {shareDenom: denomGmv, showMomColor:false, showMomArrow:false});
         }
 
         // 汇总额外展示：重点国家&全球近3个月对比
