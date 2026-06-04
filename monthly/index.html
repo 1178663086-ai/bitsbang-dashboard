@@ -834,7 +834,7 @@
         label.style.color='#0f172a';
         label.style.fontSize='12px';
         label.style.fontWeight='950';
-        // 汇总（所有国家）等柱状图：若带环比字段，则按涨跌给数字上色
+        // 「汇总（所有国家）」柱状图数值颜色规则：若带环比字段，则按涨跌给数字上色
         if(showMomColor && it && it.mom_pct!==null && it.mom_pct!==undefined){
           const p = Number(it.mom_pct);
           if(isFinite(p)){
@@ -875,7 +875,7 @@
       setText('kpi_success_orders', valUnit(m.success_users[curIdx], '人'));
       setText('kpi_success_orders_chg', deltaValue(m.success_users[curIdx], m.success_users[prevIdx], '人'));
 
-      // 成单率
+      // 成单率：成功订单数 / 全量订单数
       setText('kpi_success_rate', rate(m.success_rate[curIdx]));
       setText('kpi_success_rate_chg', deltaPP(m.success_rate[curIdx], m.success_rate[prevIdx]));
 
@@ -898,7 +898,7 @@
       setText('kpi_conversion', rate(m.conversion_rate));
       setText('kpi_conversion_chg', deltaPP(m.conversion_rate, m.conversion_rate_prev));
 
-      // Table (9 metrics in order)
+      // Table（指标明细）
       const tb=document.getElementById('metricsTbody');
       tb.innerHTML = METRICS.map(def=>{
         let cur='-', prev='-', delta='-';
@@ -1087,8 +1087,9 @@
           const curIdx = (m.months && m.months.length) ? (m.months.length-1) : 1;
           const denomOrders = (m.orders_success && m.orders_success.length) ? Number(m.orders_success[curIdx]||0) : null;
           const denomGmv = (m.gmv && m.gmv.length) ? Number(m.gmv[curIdx]||0) : null;
+          // 汇总（全部国家）/重点国家：国家名称后追加占比
           renderDonutTo('donutSvg', 'donutLegend', seg.charts.donut || [], '单', {shareDenom: denomOrders});
-          // 国家支付金额 TOP10：数值保持黑色，不加↑↓，仅追加占比
+          // 国家支付金额 TOP10：数值保持黑色（不按环比上色/不加箭头），仅在国家名称后追加占比
           renderBarsTo('barList', seg.charts.bar || [], '元', {shareDenom: denomGmv, showMomColor:false, showMomArrow:false});
         }
 
@@ -1119,8 +1120,9 @@
       const renderBlock = (key, prefix) => {
         const b = pb[key] || {};
         renderDonutTo(`donutSvg_${prefix}_orders`, `donutLegend_${prefix}_orders`, b.orders_top5 || [], '单');
-        renderBarsTo(`barList_${prefix}_users`, b.success_users_top5 || [], '人');
-        renderBarsTo(`barList_${prefix}_gmv`, b.gmv_top10 || [], '元');
+        // 产品类条形图：条形图表面数值统一黑色（不按环比上色/不加箭头）
+        renderBarsTo(`barList_${prefix}_users`, b.success_users_top5 || [], '人', {showMomColor:false, showMomArrow:false});
+        renderBarsTo(`barList_${prefix}_gmv`, b.gmv_top10 || [], '元', {showMomColor:false, showMomArrow:false});
       };
       renderBlock('old_tel', 'ot');
       renderBlock('old_data', 'od');
