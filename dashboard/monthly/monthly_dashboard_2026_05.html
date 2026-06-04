@@ -363,18 +363,26 @@
         <div class="kc-scroll"><div id="kc_success_users"></div></div>
       </div>
       <div class="card">
+        <h3 class="section-title">重点国家&全球：成单率（近3个月）</h3>
+        <div class="kc-scroll"><div id="kc_success_rate"></div></div>
+      </div>
+      <div class="card">
+        <h3 class="section-title">重点国家&全球：客单价（近3个月）</h3>
+        <div class="kc-scroll"><div id="kc_aov"></div></div>
+      </div>
+      <div class="card">
         <h3 class="section-title">重点国家&全球：复购率（近3个月）</h3>
         <div class="kc-scroll"><div id="kc_repurchase_rate"></div></div>
       </div>
       <div class="card">
-        <h3 class="section-title">重点国家&全球：转化率（近3个月，需用户列表）</h3>
+        <h3 class="section-title">重点国家&全球：转化率（近3个月）</h3>
         <div class="kc-scroll"><div id="kc_conversion_rate"></div></div>
       </div>
     </div>
 
     <!-- 单国：产品榜单（除“汇总/重点国家/全球”外展示） -->
     <div id="productSection" class="grid" style="grid-template-columns:1fr">
-      <div class="card">
+      <div class="card" id="card_old_tel">
         <h3 class="section-title">老客 - 话费</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -395,7 +403,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card_old_data">
         <h3 class="section-title">老客 - 流量</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -416,7 +424,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card_new_tel">
         <h3 class="section-title">新客 - 话费</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -437,7 +445,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card_new_data">
         <h3 class="section-title">新客 - 流量</h3>
         <div class="grid two" style="margin-top:0">
           <div class="split-panel">
@@ -572,6 +580,7 @@
       if(!host) return;
       const monthColors = ['#94a3b8', '#60a5fa', '#f97316']; // 3月/4月/5月
       const isRate = (unit === '%');
+      const lastIdx = months.length - 1;
 
       // values2d: months x countries
       const flat = values2d.flat().filter(v => v !== null && v !== undefined);
@@ -605,18 +614,28 @@
               const mx = perCountryMax[ci] || (isRate ? 0.01 : 1);
               const h = (vv===null) ? 2 : Math.max(6, Math.round(((isRate ? vv : vv) / mx) * 120));
               const opacity = (v===null || v===undefined) ? 0.25 : 1;
-              const valText = (vv===null) ? '-' : (isRate ? `${showV.toFixed(0)}%` : `${n(vv)}${unit}`);
+              // 按图示：顶部数值不展示单位（标题已说明指标）；仅转化率保留 %
+              const valText = (vv===null) ? '-' : (isRate ? `${showV.toFixed(0)}%` : `${n(vv)}`);
+
+              // 「汇总（所有国家）」柱状图数值颜色规则（最后一个月对比上一个月）
+              let arrow = '';
+              let momCls = '';
+              if(mi === lastIdx && months.length >= 2 && vv!==null){
+                const pv = values2d[mi-1][ci];
+                const pvv = (pv===null || pv===undefined) ? null : Number(pv);
+                if(pvv!==null){
+                  const diff = vv - pvv;
+                  arrow = (diff >= 0) ? '↑' : '↓';
+                  momCls = (diff >= 0) ? 'mom-up' : 'mom-down';
+                }
+              }
               return `
                 <div class="kc-col" title="${c} ${months[mi]}：${valText}">
-                  <div class="kc-top" style="opacity:${opacity}">${valText}</div>
+                  <div class="kc-top ${momCls}" style="opacity:${opacity}">${valText}${arrow}</div>
                   <div class="kc-bar" style="height:${h}px;background:${monthColors[mi]};opacity:${opacity}"></div>
                 </div>
               `;
             }).join('');
-            const lastIdx = months.length - 1;
-            const lastV = values2d[lastIdx][ci];
-            const lastVV = (lastV===null || lastV===undefined) ? null : Number(lastV);
-            const lastText = (lastVV===null) ? '-' : (isRate ? `${(lastVV*100).toFixed(0)}%` : `${n(lastVV)}${unit}`);
             return `
               <div class="kc-group">
                 <div class="kc-bars" title="${c}">${bars}</div>
@@ -765,7 +784,14 @@
         // 总数显示在柱体表面（整数）
         const label=document.createElement('div');
         label.className='bar-label';
-        label.textContent = `${n(Math.round(it.value||0))}${unit || ''}`;
+        let arrow = '';
+        if(it && it.mom_pct!==null && it.mom_pct!==undefined){
+          const p = Number(it.mom_pct);
+          if(isFinite(p)){
+            arrow = (p>=0) ? '↑' : '↓';
+          }
+        }
+        label.textContent = `${n(Math.round(it.value||0))}${unit || ''}${arrow}`;
         label.style.position='absolute';
         label.style.right='8px';
         label.style.top='50%';
@@ -773,6 +799,13 @@
         label.style.color='#0f172a';
         label.style.fontSize='12px';
         label.style.fontWeight='950';
+        // 「汇总（所有国家）」柱状图数值颜色规则：若带环比字段，则按涨跌给数字上色
+        if(it && it.mom_pct!==null && it.mom_pct!==undefined){
+          const p = Number(it.mom_pct);
+          if(isFinite(p)){
+            label.style.color = (p>=0) ? 'var(--green)' : 'var(--red)';
+          }
+        }
         // 不加浅色底（按要求），依赖低对比填充色确保可读
         track.appendChild(label);
 
@@ -1001,6 +1034,8 @@
           renderKeyCountryGrouped('kc_new_users', kc.months, kc.countries, kc.new_users, '人', '新客数需从“用户列表”获取，当前留空');
           renderKeyCountryGrouped('kc_orders_success', kc.months, kc.countries, kc.orders_success, '单', '无数据');
           renderKeyCountryGrouped('kc_success_users', kc.months, kc.countries, kc.success_users, '人', '无数据');
+        renderKeyCountryGrouped('kc_success_rate', kc.months, kc.countries, kc.success_rate, '%', '无数据');
+        renderKeyCountryGrouped('kc_aov', kc.months, kc.countries, kc.aov, '元', '无数据');
           renderKeyCountryGrouped('kc_repurchase_rate', kc.months, kc.countries, kc.repurchase_rate, '%', '无数据');
           renderKeyCountryGrouped('kc_conversion_rate', kc.months, kc.countries, kc.conversion_rate, '%', '转化率需从“用户列表”获取，当前留空');
 
@@ -1021,6 +1056,19 @@
       renderBlock('old_data', 'od');
       renderBlock('new_tel', 'nt');
       renderBlock('new_data', 'nd');
+
+      // 若国家无“流量”产品（本月与上月都为空），则隐藏“流量”两张卡片（避免空柱状图/饼图展示）
+      const hasAny = (b) => {
+        if(!b) return false;
+        const a = (b.orders_top5||[]).length + (b.success_users_top5||[]).length + (b.gmv_top10||[]).length;
+        return a > 0;
+      };
+      const showOldData = hasAny(pb.old_data);
+      const showNewData = hasAny(pb.new_data);
+      const oldDataCard = document.getElementById('card_old_data');
+      const newDataCard = document.getElementById('card_new_data');
+      if(oldDataCard) oldDataCard.style.display = showOldData ? '' : 'none';
+      if(newDataCard) newDataCard.style.display = showNewData ? '' : 'none';
     }
 
     function refresh(){
