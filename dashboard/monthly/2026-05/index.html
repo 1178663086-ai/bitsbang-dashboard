@@ -111,17 +111,6 @@
     .bar-row{display:grid;grid-template-columns:180px 1fr 170px;gap:12px;align-items:center}
     @media (max-width:900px){.bar-row{grid-template-columns:1fr;gap:6px;align-items:flex-start}}
     .bar-name{font-size:12px;color:var(--text);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    /* 单国产品榜：不换行，但缩短条形图长度以腾出名称展示空间 */
-    .bar-row.prod{
-      /* 名称列更宽，条形列不至于过短；并缩小列间距让条形更靠近名称 */
-      grid-template-columns:minmax(320px, 520px) 320px 140px;
-      gap:8px;
-      align-items:center;
-    }
-    .bar-row.prod .bar-name{
-      overflow:visible;
-      text-overflow:clip;
-    }
     .bar-name .share{margin-left:8px;color:var(--muted);font-weight:500;font-size:11px}
     .bar-track{height:12px;background:#eef2f7;border-radius:999px;overflow:hidden}
     /* 单色系：更明显但不深色（统一用于所有横向排名条形图） */
@@ -807,19 +796,29 @@
       const showMomColor = (o.showMomColor===undefined) ? true : !!o.showMomColor;
       const showMomArrow = (o.showMomArrow===undefined) ? true : !!o.showMomArrow;
       const layout = (o.layout || '').toString();
+      const shortenProductName = (s)=>{
+        const t = (s===null || s===undefined) ? '' : String(s);
+        // 规则：不换行；若名称过长（通常是“品牌商 + SKU/面额”），仅保留最前面的运营商名称。
+        // 实现：截断到第一个数字之前（保留辨识度较高的前缀）。
+        const idx = t.search(/\d/);
+        if(idx <= 0) return t.trim();
+        const head = t.slice(0, idx).trim();
+        return head || t.trim();
+      };
       const max = Math.max(...items.map(x=>x.value||0),1);
       items.forEach((it)=>{
         const row=document.createElement('div');
         row.className='bar-row';
         const name=document.createElement('div');
         name.className='bar-name';
-        if(layout === 'product') row.classList.add('prod');
-        name.title=it.name;
+        const fullName = (it && it.name!==null && it.name!==undefined) ? String(it.name) : '';
+        const dispName = (layout === 'product') ? shortenProductName(fullName) : fullName;
+        name.title = fullName;
         if(shareDenom && isFinite(shareDenom) && shareDenom>0 && it && it.value!==null && it.value!==undefined){
           const sharePct = (Number(it.value) / shareDenom) * 100;
-          name.innerHTML = `<span>${it.name}</span><span class="share">占比${sharePct.toFixed(0)}%</span>`;
+          name.innerHTML = `<span>${dispName}</span><span class="share">占比${sharePct.toFixed(0)}%</span>`;
         }else{
-          name.textContent=it.name;
+          name.textContent = dispName;
         }
         const track=document.createElement('div');
         track.className='bar-track';
