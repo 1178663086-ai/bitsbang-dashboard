@@ -506,11 +506,11 @@
   </div>
 
   <!-- 离线数据（与本 HTML 放同一目录即可打开） -->
-  <script src="data.js"></script>
+  <script src="monthly_dashboard_2026_06.data.js?v=20260701-fix-repurchase"></script>
   <script>
     const DATA = window.DASHBOARD_DATA;
     if(!DATA){
-      throw new Error('未加载到数据：请确保“index.html”和“data.js”放在同一目录。');
+      throw new Error('未加载到数据：请确保“monthly_dashboard_2026_06.html”和“monthly_dashboard_2026_06.data.js”放在同一目录。');
     }
     const COLORS = ['#f97316','#334155','#3b82f6','#eab308','#10b981','#a855f7','#ef4444','#14b8a6'];
 
