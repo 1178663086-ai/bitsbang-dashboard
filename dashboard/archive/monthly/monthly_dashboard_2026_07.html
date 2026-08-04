@@ -491,8 +491,8 @@
         <thead>
           <tr>
             <th>指标</th>
-            <th class="r">5月</th>
-            <th class="r">4月</th>
+            <th class="r" id="metricsCurrentMonth">-</th>
+            <th class="r" id="metricsCompareMonth">-</th>
             <th class="r">对比</th>
           </tr>
         </thead>
@@ -1163,6 +1163,12 @@
       document.getElementById('title').textContent = DATA.meta.title;
       document.getElementById('monthText').textContent = DATA.meta.month;
       document.getElementById('compareText').textContent = DATA.meta.compare_month;
+      const monthLabel = (value) => {
+        const match = String(value || '').match(/^(\d{4})-(\d{1,2})$/);
+        return match ? `${Number(match[2])}月` : String(value || '-');
+      };
+      document.getElementById('metricsCurrentMonth').textContent = monthLabel(DATA.meta.month);
+      document.getElementById('metricsCompareMonth').textContent = monthLabel(DATA.meta.compare_month);
       document.getElementById('dataSource').textContent = DATA.meta.data_source;
       const countrySel=document.getElementById('countrySelect');
       const sourceSel=document.getElementById('sourceSelect');
